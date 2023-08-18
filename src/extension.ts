@@ -75,7 +75,7 @@ export class PythonOpencvImageProvider implements vscode.CodeActionProvider {
 		}
 
 		return [
-			{ command:"vscode.open", title: 'View Image', arguments: [ vscode.Uri.file(path), vscode.ViewColumn.Beside ] }
+			{ command:"vscode.open", title: 'View PLY', arguments: [ vscode.Uri.file(path), vscode.ViewColumn.Beside ] }
 		];
 	}
 }
