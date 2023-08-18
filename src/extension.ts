@@ -14,28 +14,21 @@ const WORKING_DIR = 'svifpod';
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	let usetmp = vscode.workspace.getConfiguration("svifpod").get("usetmppathtosave", true);
-	let dir = context.storagePath as string;
-	if (usetmp || dir === undefined)
-	{
-		dir = tmpdir();
-		dir = join(dir, WORKING_DIR);
-	}
-	
-	if (existsSync(dir))
-	{
-		let files = readdirSync(dir);
-		files.forEach(file => {
-			let curPath = join(dir, file);
-			unlinkSync(curPath);
-		});
-	}
-	else
-	{
-		mkdirSync(dir);
-	}
+	// Get the path to the current workspace folder
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceFolder) {
+        // No workspace folder found, handle the case accordingly
+        return;
+    }
 
-	viewImageSvc = new ViewImageService(dir);
+    // Set the working directory to the __pycache__ folder within the project folder
+    const pycacheDir = join(workspaceFolder, '__pycache__');
+
+    if (!existsSync(pycacheDir)) {
+        mkdirSync(pycacheDir);
+    }
+
+    viewImageSvc = new ViewImageService(pycacheDir);
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -44,39 +37,6 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider('python', 
 		new PythonOpencvImageProvider(), {	providedCodeActionKinds: [vscode.CodeActionKind.Empty] }));
-
-
-		context.subscriptions.push(
-			vscode.commands.registerTextEditorCommand("extension.viewimagepythonopencvdebug", editor => {
-				viewImageSvc.ViewImage(editor.document, editor.selection)
-					.then(path => {
-						if (path === undefined) {
-							return;
-						}
-						//vscode.commands.executeCommand("vscode.open", vscode.Uri.file("C:/Users/Carlos/demoPython/pcd.ply",), vscode.ViewColumn.Beside);
-						console.log(path);
-						
-						//vscode.commands.executeCommand("vscode.open", vscode.Uri.file("C:/Users/Carlos/AppData/Local/Temp/svifpod/point_cloud.ply",), vscode.ViewColumn.Beside);
-						vscode.commands.executeCommand("vscode.open", vscode.Uri.file(path,), vscode.ViewColumn.Beside);
-					})
-					.catch(error => {
-						console.error('Error:', error);
-					});
-			})
-		);
-
-	const helloWorldDisposable = vscode.commands.registerCommand(
-        'helloworld.helloWorld',
-        () => {
-            // The code you place here will be executed every time your command is executed
-            // Display a message box to the user
-            //vscode.window.showInformationMessage(
-            //    'Hello VS Code 2023 (the future!!)',
-            //);
-			vscode.commands.executeCommand("vscode.open", vscode.Uri.file("C:/Users/Carlos/demoPython/pcd.ply",), vscode.ViewColumn.Beside);
-        },
-    );
-	context.subscriptions.push(helloWorldDisposable);
 
 }
 

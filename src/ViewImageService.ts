@@ -51,9 +51,9 @@ export default class ViewImageService {
 			return;
 		}
 
-		//let path = join(this.workingdir,  `${targetVariable.name}.ply`);
-		//let savepath = path.replace(/\\/g, '/');
-        let savepath = "C:/Users/Carlos/demoPython/pcd.ply";
+		let path = join(this.workingdir,  `${targetVariable.name}.ply`);
+		let savepath = path.replace(/\\/g, '/');
+        //let savepath = "C:/Users/Carlos/demoPython/pcd.ply";
 
 		const vn = targetVariable.evaluateName; // var name
 		//const nparray_expression =  `(${vn}.numpy() * 255.0 if (hasattr(${vn}, 'dtype')) and (${vn}.dtype == np.float64 or ${vn}.dtype == np.float32) else ${vn}.numpy()) if callable(getattr(${vn}, 'numpy', None)) else (${vn} * 255.0 if (isinstance(${vn}, (np.ndarray)) and (${vn}.dtype == np.float64 or ${vn}.dtype == np.float32)) else ${vn})`;
