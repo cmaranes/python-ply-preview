@@ -46,15 +46,24 @@ export function activate(context: vscode.ExtensionContext) {
 		new PythonOpencvImageProvider(), {	providedCodeActionKinds: [vscode.CodeActionKind.Empty] }));
 
 
-	context.subscriptions.push(
-		vscode.commands.registerTextEditorCommand("extension.viewimagepythonopencvdebug", async editor => {
-			let path = await viewImageSvc.ViewImage(editor.document, editor.selection);
-			if (path === undefined) {
-				return;
-			}
-			vscode.commands.executeCommand("vscode.open", vscode.Uri.file(path), vscode.ViewColumn.Beside);
-		})
-	);
+		context.subscriptions.push(
+			vscode.commands.registerTextEditorCommand("extension.viewimagepythonopencvdebug", editor => {
+				viewImageSvc.ViewImage(editor.document, editor.selection)
+					.then(path => {
+						if (path === undefined) {
+							return;
+						}
+						vscode.commands.executeCommand("vscode.open", vscode.Uri.file("C:/Users/Carlos/demoPython/pcd.ply",), vscode.ViewColumn.Beside);
+						console.log(path);
+						
+						//vscode.commands.executeCommand("vscode.open", vscode.Uri.file("C:/Users/Carlos/AppData/Local/Temp/svifpod/point_cloud.ply",), vscode.ViewColumn.Beside);
+						//vscode.commands.executeCommand("vscode.open", vscode.Uri.file(path,), vscode.ViewColumn.Beside);
+					})
+					.catch(error => {
+						console.error('Error:', error);
+					});
+			})
+		);
 
 	const helloWorldDisposable = vscode.commands.registerCommand(
         'helloworld.helloWorld',
