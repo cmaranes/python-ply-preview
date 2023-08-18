@@ -69,3 +69,12 @@ You can author your README using Visual Studio Code. Here are some useful editor
 * [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**
+
+
+ACKS
+https://github.com/mitjap/WebGLPlyViewer
+https://github.com/john-guo/simply-view-image-for-python-opencv-debugging/tree/master
+https://marketplace.visualstudio.com/items?itemName=076923.python-image-preview
+https://marketplace.visualstudio.com/items?itemName=tatsy.vscode-3d-preview 
+https://marketplace.visualstudio.com/items?itemName=obarads.vscode-pc-viewer
+# TODO, not only pointcloud, but also 3d points

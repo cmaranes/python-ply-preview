@@ -19,7 +19,11 @@
 				"command": "extension.viewimagepythonopencvdebug",
 				"title": "View Image(Python OpenCV Debug)",
 				"enablement": "inDebugMode"
-			}
+			},
+      {
+        "command": "helloworld.helloWorld",
+        "title": "Hello World"
+      }
 		],
 		"keybindings": [
 			{

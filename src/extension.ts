@@ -56,6 +56,19 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
+	const helloWorldDisposable = vscode.commands.registerCommand(
+        'helloworld.helloWorld',
+        () => {
+            // The code you place here will be executed every time your command is executed
+            // Display a message box to the user
+            //vscode.window.showInformationMessage(
+            //    'Hello VS Code 2023 (the future!!)',
+            //);
+			vscode.commands.executeCommand("vscode.open", vscode.Uri.file("C:/Users/Carlos/demoPython/pcd.ply",), vscode.ViewColumn.Beside);
+        },
+    );
+	context.subscriptions.push(helloWorldDisposable);
+
 }
 
 // this method is called when your extension is deactivated
@@ -75,7 +88,7 @@ export class PythonOpencvImageProvider implements vscode.CodeActionProvider {
 		}
 
 		return [
-			{ command:"vscode.open", title: 'View PLY', arguments: [ vscode.Uri.file(path), vscode.ViewColumn.Beside ] }
+			{ command:"vscode.open", title: 'View PLY', arguments: [ "C:/Users/Carlos/demoPython/pcd.ply", vscode.ViewColumn.Beside ] }
 		];
 	}
 }
