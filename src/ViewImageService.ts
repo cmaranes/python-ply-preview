@@ -62,7 +62,7 @@ export default class ViewImageService {
         //const expression = `o3d.io.write_point_cloud('pcd.ply', ${pointcloud_expression})`;
 		res = await session.customRequest("evaluate", { expression: expression, frameId: callStack, context:'hover' });
 		console.log(`evaluate ${expression} result: ${res.result}`);
-        await sleep(1000); // Wait for 2 seconds
+        ///await sleep(1000); // Wait for 2 seconds
 		return savepath;
         //return "C:/Users/Carlos/demoPython/pcd.ply";
 	}

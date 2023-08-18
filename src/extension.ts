@@ -97,7 +97,7 @@ export class PythonOpencvImageProvider implements vscode.CodeActionProvider {
 		}
 
 		return [
-			{ command:"vscode.open", title: 'View PLY', arguments: [ "C:/Users/Carlos/demoPython/pcd.ply", vscode.ViewColumn.Beside ] }
+			{ command:"vscode.open", title: 'View PLY', arguments: [ vscode.Uri.file(path,), vscode.ViewColumn.Beside ] }
 		];
 	}
 }
