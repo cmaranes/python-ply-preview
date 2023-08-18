@@ -5,7 +5,7 @@ function stringToBoolean(input: string): boolean {
     return input.toLowerCase() === "true";
 }
 
-export default class ViewImageService {
+export default class ViewPLYService {
 	private workingdir :string;
 
 	public constructor(dir: string)
@@ -13,7 +13,7 @@ export default class ViewImageService {
 		this.workingdir = dir;
 	}
 
-	public async ViewImage(document: vscode.TextDocument, range: vscode.Range): Promise<string|undefined> {
+	public async viewPLY(document: vscode.TextDocument, range: vscode.Range): Promise<string|undefined> {
 		const session = vscode.debug.activeDebugSession;
 		if (session === undefined) {
 			return;
@@ -60,27 +60,26 @@ export default class ViewImageService {
 		
 		const vn = targetVariable.evaluateName; // var name
 
-		const numpy_available_expression = `True if 'np' in locals() or 'np' in globals() else False`;
-		res = await session.customRequest("evaluate", { expression: numpy_available_expression, frameId: callStack, context:'hover' });
-		let numpy_available = stringToBoolean(res['result']);
-		if (numpy_available)
+		const numpyAvailableExpression = `True if 'np' in locals() or 'np' in globals() else False`;
+		res = await session.customRequest("evaluate", { expression: numpyAvailableExpression, frameId: callStack, context:'hover' });
+		let numpyAvailable = stringToBoolean(res['result']);
+		if (numpyAvailable)
 		{
 			// Check if variable is a numpy array, must be shape (n, 3), being n the number of points
-			const valid_numpy_array_expression = `isinstance(${vn}, np.ndarray) and ${vn}.ndim == 2 and ${vn}.shape[1] == 3`;
-			res = await session.customRequest("evaluate", { expression: valid_numpy_array_expression, frameId: callStack, context:'hover' });
-			let valid_numpy_array = stringToBoolean(res['result']);
-			if (valid_numpy_array)
+			const validNumpyArrayExpression = `isinstance(${vn}, np.ndarray) and ${vn}.ndim == 2 and ${vn}.shape[1] == 3`;
+			res = await session.customRequest("evaluate", { expression: validNumpyArrayExpression, frameId: callStack, context:'hover' });
+			let validNumpyArray = stringToBoolean(res['result']);
+			if (validNumpyArray)
 			{
 				// Convert numpy array to open3d and store result
-				const store_point_cloud_expression = `o3d.io.write_point_cloud('${savepath}', o3d.geometry.PointCloud(points=o3d.utility.Vector3dVector(${vn})))`;
-				res = await session.customRequest("evaluate", { expression: store_point_cloud_expression, frameId: callStack, context:'hover' });
+				const storePointCloudExpression = `o3d.io.write_point_cloud('${savepath}', o3d.geometry.PointCloud(points=o3d.utility.Vector3dVector(${vn})))`;
+				res = await session.customRequest("evaluate", { expression: storePointCloudExpression, frameId: callStack, context:'hover' });
 				return savepath;
 			}
 
 		}
 
         const expression = `o3d.io.write_point_cloud('${savepath}', ${vn})`;
-        //const expression = `o3d.io.write_point_cloud('pcd.ply', ${pointcloud_expression})`;
 		res = await session.customRequest("evaluate", { expression: expression, frameId: callStack, context:'hover' });
 		console.log(`evaluate ${expression} result: ${res.result}`);
 		return savepath;

@@ -13,25 +13,6 @@
 		"onDebugResolve:python"
 	],
   "main": "./out/extension.js",
-  "contributes": {
-		"keybindings": [
-			{
-				"command": "extension.viewimagepythonopencvdebug",
-				"key": "ctrl+alt+q",
-				"when": "inDebugMode"
-			}
-		],
-		"configuration": {
-			"title": "View Image(Python OpenCV Debug)",
-			"properties": {
-				"svifpod.usetmppathtosave": {
-					"type": "boolean",
-					"default": true,
-					"description": "Use the system tmp path to save image otherwise use the storage path."
-				}
-			}
-		}
-	},
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
@@ -52,5 +33,8 @@
     "mocha": "^10.2.0",
     "typescript": "^5.1.3",
     "@vscode/test-electron": "^2.3.2"
-  }
+  },
+  "extensionDependencies": [
+    "tatsy.vscode-3d-preview" 
+  ]
 }
