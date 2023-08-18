@@ -1,6 +1,6 @@
 {
   "name": "python-ply-preview",
-  "displayName": "python-ply-preview",
+  "displayName": "python_ply_preview",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -9,16 +9,36 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+		"onDebugResolve:python"
+	],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "python-ply-preview.helloWorld",
-        "title": "Hello World"
-      }
-    ]
-  },
+		"commands": [
+			{
+				"command": "extension.viewimagepythonopencvdebug",
+				"title": "View Image(Python OpenCV Debug)",
+				"enablement": "inDebugMode"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.viewimagepythonopencvdebug",
+				"key": "ctrl+alt+q",
+				"when": "inDebugMode"
+			}
+		],
+		"configuration": {
+			"title": "View Image(Python OpenCV Debug)",
+			"properties": {
+				"svifpod.usetmppathtosave": {
+					"type": "boolean",
+					"default": true,
+					"description": "Use the system tmp path to save image otherwise use the storage path."
+				}
+			}
+		}
+	},
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
