@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import { join } from 'path';
 
+function stringToBoolean(input: string): boolean {
+    return input.toLowerCase() === "true";
+}
+
 export default class ViewImageService {
 	private workingdir :string;
 
@@ -53,18 +57,33 @@ export default class ViewImageService {
 
 		let path = join(this.workingdir,  `${targetVariable.name}.ply`);
 		let savepath = path.replace(/\\/g, '/');
-        //let savepath = "C:/Users/Carlos/demoPython/pcd.ply";
-
+		
 		const vn = targetVariable.evaluateName; // var name
-		//const nparray_expression =  `(${vn}.numpy() * 255.0 if (hasattr(${vn}, 'dtype')) and (${vn}.dtype == np.float64 or ${vn}.dtype == np.float32) else ${vn}.numpy()) if callable(getattr(${vn}, 'numpy', None)) else (${vn} * 255.0 if (isinstance(${vn}, (np.ndarray)) and (${vn}.dtype == np.float64 or ${vn}.dtype == np.float32)) else ${vn})`;
-		const pointcloud_expression = `${vn}`;
-        const expression = `o3d.io.write_point_cloud('${savepath}', ${pointcloud_expression})`;
+
+		const numpy_available_expression = `True if 'np' in locals() or 'np' in globals() else False`;
+		res = await session.customRequest("evaluate", { expression: numpy_available_expression, frameId: callStack, context:'hover' });
+		let numpy_available = stringToBoolean(res['result']);
+		if (numpy_available)
+		{
+			// Check if variable is a numpy array, must be shape (n, 3), being n the number of points
+			const valid_numpy_array_expression = `isinstance(${vn}, np.ndarray) and ${vn}.ndim == 2 and ${vn}.shape[1] == 3`;
+			res = await session.customRequest("evaluate", { expression: valid_numpy_array_expression, frameId: callStack, context:'hover' });
+			let valid_numpy_array = stringToBoolean(res['result']);
+			if (valid_numpy_array)
+			{
+				// Convert numpy array to open3d and store result
+				const store_point_cloud_expression = `o3d.io.write_point_cloud('${savepath}', o3d.geometry.PointCloud(points=o3d.utility.Vector3dVector(${vn})))`;
+				res = await session.customRequest("evaluate", { expression: store_point_cloud_expression, frameId: callStack, context:'hover' });
+				return savepath;
+			}
+
+		}
+
+        const expression = `o3d.io.write_point_cloud('${savepath}', ${vn})`;
         //const expression = `o3d.io.write_point_cloud('pcd.ply', ${pointcloud_expression})`;
 		res = await session.customRequest("evaluate", { expression: expression, frameId: callStack, context:'hover' });
 		console.log(`evaluate ${expression} result: ${res.result}`);
-        ///await sleep(1000); // Wait for 2 seconds
 		return savepath;
-        //return "C:/Users/Carlos/demoPython/pcd.ply";
 	}
 }
 
