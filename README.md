@@ -53,9 +53,14 @@ The temporal point clouds are installed in the __pycache__ folder.
 
 ## Release Notes
 
+## 0.0.2
+
+- Fixed extension description and name.
+- Added stats in the README file.
+
 ### 0.0.1
 
-Initial release.
+- Initial release.
 
 ## Acknowledgments
 - [simply-view-image-for-python-opencv-debugging](https://github.com/john-guo/simply-view-image-for-python-opencv-debugging/tree/master)
