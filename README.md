@@ -53,6 +53,6 @@ Initial release.
 ## Acknowledgments
 - [simply-view-image-for-python-opencv-debugging](https://github.com/john-guo/simply-view-image-for-python-opencv-debugging/tree/master)
 - [Python Image Preview](https://github.com/076923/python-image-preview)
-- [VSCode 3D Preview](https://marketplace.visualstudio.com/items?itemName=tatsy.vscode-3d-preview)
+- [VSCode 3D Preview](https://github.com/tatsy/vscode-3d-preview)
 - [vscode-pc-viewer](https://github.com/Obarads/vscode-pc-viewer)
 - [WebGLPlyViewer](https://github.com/mitjap/WebGLPlyViewer)
