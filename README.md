@@ -1,6 +1,13 @@
 # VSCode Python PLY Preview 
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/cmaranes.python-ply-preview)](https://marketplace.visualstudio.com/items?itemName=cmaranes.python-ply-preview)
+![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/cmaranes.python-ply-preview)
+
+
 The Python PLY Preview is a powerful extension for Visual Studio Code that enhances your debugging experience when working with point cloud data. This extension allows you to seamlessly preview and interact with PLY files and NumPy point clouds directly within the VS Code debugger.
+
+**See in VS Marketplace:** [python-ply-preview](https://marketplace.visualstudio.com/items?itemName=cmaranes.python-ply-preview#review-details)
 
 ## How to use
 

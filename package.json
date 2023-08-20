@@ -1,7 +1,7 @@
 {
   "name": "python-ply-preview",
-  "displayName": "python_ply_preview",
-  "description": "PLY Preview",
+  "displayName": "Python PLY Preview",
+  "description": "Enhance your debugging experience when working with point cloud data. This extension allows you to seamlessly preview and interact with PLY files and NumPy point clouds directly within the VS Code debugger.",
   "version": "0.0.1",
   "publisher" : "cmaranes",
   "engines": {
