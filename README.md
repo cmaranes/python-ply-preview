@@ -1,80 +1,56 @@
-# python-ply-preview README
+# VSCode Python PLY Preview 
 
-This is the README for your extension "python-ply-preview". After writing up a brief description, we recommend including the following sections.
+The Python PLY Preview is a powerful extension for Visual Studio Code that enhances your debugging experience when working with point cloud data. This extension allows you to seamlessly preview and interact with PLY files and NumPy point clouds directly within the VS Code debugger.
 
-## Features
+## How to use
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+1. Place a breakpoint at the specific line of code where you want to pause execution.
 
-For example if there is an image subfolder under your extension project workspace:
+2. Initiate the program in Debug mode to start execution with breakpoints enabled.
 
-\!\[feature X\]\(images/feature-x.png\)
+3. Direct your cursor over the variable name and opt for View PLY from the available options.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+4. The resulting point cloud will be showcased in a fresh tab for your reference.
+
+<br>
+
+### PLY
+
+![PLY](images/ply.gif)
+
+### NumPy
+
+![NumPy](images/numpy.gif)
+
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+It is mandatory to import the Python open3d library to allow the extension to store the point cloud:
 
-## Extension Settings
+    import open3d as o3d
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+This can be installed as `pip install open3d`
 
-For example:
 
-This extension contributes the following settings:
+In case of wanting to display a pointcloud represented as a numpy array it must be shape of (n, 3), being n the number of points. You must import numpy as:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+    import numpy as np
 
-## Known Issues
+## Known Issues and Limitations
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+There is a limitation in the number of points that can be displayed. The plugin usually works with a small number of points (<500000 points).
+
+The temporal point clouds are installed in the __pycache__ folder.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
+Initial release.
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
-
-
-ACKS
-https://github.com/mitjap/WebGLPlyViewer
-https://github.com/john-guo/simply-view-image-for-python-opencv-debugging/tree/master
-https://marketplace.visualstudio.com/items?itemName=076923.python-image-preview
-https://marketplace.visualstudio.com/items?itemName=tatsy.vscode-3d-preview 
-https://marketplace.visualstudio.com/items?itemName=obarads.vscode-pc-viewer
-# TODO, not only pointcloud, but also 3d points
+## Acknowledgments
+- [simply-view-image-for-python-opencv-debugging](https://github.com/john-guo/simply-view-image-for-python-opencv-debugging/tree/master)
+- [Python Image Preview](https://github.com/076923/python-image-preview)
+- [VSCode 3D Preview](https://marketplace.visualstudio.com/items?itemName=tatsy.vscode-3d-preview)
+- [vscode-pc-viewer](https://github.com/Obarads/vscode-pc-viewer)
+- [WebGLPlyViewer](https://github.com/mitjap/WebGLPlyViewer)

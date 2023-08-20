@@ -1,14 +1,31 @@
 {
   "name": "python-ply-preview",
   "displayName": "python_ply_preview",
-  "description": "",
+  "description": "PLY Preview",
   "version": "0.0.1",
+  "publisher" : "cmaranes",
   "engines": {
     "vscode": "^1.81.0"
   },
+  "icon" : "images/icon.png",
   "categories": [
-    "Other"
+		"Debuggers",
+		"Data Science",
+		"Visualization"
+	],
+  "keywords": [
+    "python",
+    "ply",
+    "numpy",
+    "open3d",
+    "3d",
+    "visualization",
+    "preview"
   ],
+  "repository": {
+		"type": "git",
+		"url": "https://github.com/cmaranes/python-ply-preview"
+	},
   "activationEvents": [
 		"onDebugResolve:python"
 	],
