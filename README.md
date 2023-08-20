@@ -36,6 +36,8 @@ In case of wanting to display a pointcloud represented as a numpy array it must 
 
     import numpy as np
 
+The extension also needs a ply viewer extension, for example [this one](https://marketplace.visualstudio.com/items?itemName=tatsy.vscode-3d-preview)
+
 ## Known Issues and Limitations
 
 There is a limitation in the number of points that can be displayed. The plugin usually works with a small number of points (<500000 points).
