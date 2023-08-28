@@ -53,6 +53,10 @@ The temporal point clouds are installed in the __pycache__ folder.
 
 ## Release Notes
 
+## 0.0.3
+
+- pycache folder is created again if removed.
+
 ## 0.0.2
 
 - Fixed extension description and name.

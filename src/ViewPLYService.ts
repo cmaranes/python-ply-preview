@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { join } from 'path';
+import { mkdirSync, existsSync} from 'fs';
 
 function stringToBoolean(input: string): boolean {
     return input.toLowerCase() === "true";
@@ -8,9 +9,17 @@ function stringToBoolean(input: string): boolean {
 export default class ViewPLYService {
 	private workingdir :string;
 
-	public constructor(dir: string)
+	public constructor()
 	{
-		this.workingdir = dir;
+		// Get the path to the current workspace folder
+		let workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+		if (!workspaceFolder) {
+			// No workspace folder found, handle the case accordingly
+			workspaceFolder = ".";
+		}
+
+		// Set the working directory to the __pycache__ folder within the project folder
+		this.workingdir = join(workspaceFolder, '__pycache__');
 	}
 
 	public async viewPLY(document: vscode.TextDocument, range: vscode.Range): Promise<string|undefined> {
@@ -54,6 +63,10 @@ export default class ViewPLYService {
 		{
 			return;
 		}
+
+		if (!existsSync(this.workingdir)) {
+        	mkdirSync(this.workingdir);
+    	}
 
 		let path = join(this.workingdir,  `${targetVariable.name}.ply`);
 		let savepath = path.replace(/\\/g, '/');

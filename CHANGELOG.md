@@ -4,6 +4,10 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.3]
+
+- pycache folder is created again if removed.
+
 ## [0.0.2]
 
 - Fixed extension description and name.
