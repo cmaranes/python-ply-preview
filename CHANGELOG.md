@@ -4,6 +4,10 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+### 0.0.5
+
+  * Modified README.md to include Visual Studio Marketplace badges.
+
 ### 0.0.4
 
   * Added support for PyTorch Tensors and NumPy arrays with color `(n, 6)`.

@@ -1,8 +1,8 @@
 # VSCode Python PLY Preview
 
-[](https://opensource.org/licenses/MIT)
-[](https://marketplace.visualstudio.com/items?itemName=cmaranes.python-ply-preview)
-[](https://marketplace.visualstudio.com/items?itemName=cmaranes.python-ply-preview)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/cmaranes.python-ply-preview)](https://marketplace.visualstudio.com/items?itemName=cmaranes.python-ply-preview)
+![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/cmaranes.python-ply-preview)
 
 🚀 Instantly visualize 3D point clouds from your Python debugger in VS Code\!
 
@@ -106,6 +106,10 @@ This extension handles the *saving* of the point cloud. You need another extensi
 -----
 
 ## Release Notes
+
+### 0.0.5
+
+  * Modified README.md to include Visual Studio Marketplace badges.
 
 ### 0.0.4
 
