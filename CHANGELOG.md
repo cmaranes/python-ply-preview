@@ -4,8 +4,10 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-### 0.0.5
+### 0.0.6
 
+  * Removed the requirement to import `open3d` in the user script beforehand.
+  * Added automatic library check (Open3D, NumPy, PyTorch) and user notification if missing.
   * Modified README.md to include Visual Studio Marketplace badges.
 
 ### 0.0.4

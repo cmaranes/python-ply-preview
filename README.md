@@ -71,16 +71,12 @@ print("Breakpoint here: Hover over variables to preview them as PLY.")
 
 ### 1\. Python Libraries
 
-The extension leverages **Open3D** to save the point cloud data. You must have it imported in your debug environment, along with other relevant libraries.
+The extension leverages **Open3D** to save the point cloud data. It handles imports automatically, so you don't need to import `open3d` in your script.
 
-```python
-# Mandatory for all operations
-import open3d as o3d
-
-# Required for NumPy or PyTorch visualization
-import numpy as np
-import torch
-```
+However, the libraries must be installed in your Python environment:
+- **open3d**: Mandatory for all operations.
+- **numpy**: Required for NumPy visualization.
+- **torch**: Required for PyTorch visualization.
 
 You can install these packages using pip:
 `pip install open3d numpy torch`
@@ -107,8 +103,11 @@ This extension handles the *saving* of the point cloud. You need another extensi
 
 ## Release Notes
 
-### 0.0.5
+### 0.0.6
 
+  * Modified README.md to include Visual Studio Marketplace badges.
+  * Removed the requirement to import `open3d` in the user script beforehand.
+  * Added automatic library check (Open3D, NumPy, PyTorch) and user notification if missing.
   * Modified README.md to include Visual Studio Marketplace badges.
 
 ### 0.0.4
