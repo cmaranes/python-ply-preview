@@ -8,11 +8,11 @@ interface PointCloudHandler {
     /** A user-friendly name for the point cloud type. */
     name: string;
     /** * A Python expression string that returns True if the variable matches the type.
-     * MUST be safe to run even if libraries (like numpy/o3d) are not imported.
+     * MUST be safe to run even if libraries (like numpy/o3d) are not imported in the user script.
      */
     typeCheck: (varName: string) => string;
     /** * A Python script string that saves the variable to a specified path. 
-     * Should handle its own imports.
+     * Should handle its own imports locally.
      */
     saveExpression: (varName: string, savePath: string) => string;
 }
@@ -32,12 +32,14 @@ del __viewply_o3d`,
     {
         name: 'NumPy Array',
         // Check 2: Verify it is a numpy array with shape (N, 3) or (N, 6)
+        // Uses .startswith('numpy') to be robust against submodules or masked arrays
         typeCheck: (varName) => 
-            `hasattr(${varName}, '__class__') and ${varName}.__class__.__module__ == 'numpy' and ${varName}.__class__.__name__ == 'ndarray' and ${varName}.ndim == 2 and ${varName}.shape[1] in [3, 6]`,
+            `hasattr(${varName}, '__class__') and (${varName}.__class__.__module__ == 'numpy' or ${varName}.__class__.__module__.startswith('numpy.')) and ${varName}.__class__.__name__ == 'ndarray' and ${varName}.ndim == 2 and ${varName}.shape[1] in [3, 6]`,
         
         saveExpression: (varName, savePath) => `
 import open3d as __viewply_o3d
 pcd = __viewply_o3d.geometry.PointCloud()
+# Use slice directly on the variable
 pcd.points = __viewply_o3d.utility.Vector3dVector((${varName})[:, :3])
 if (${varName}).shape[1] == 6:
     pcd.colors = __viewply_o3d.utility.Vector3dVector((${varName})[:, 3:])
@@ -53,6 +55,7 @@ del __viewply_o3d`,
         saveExpression: (varName, savePath) => `
 import open3d as __viewply_o3d
 pcd = __viewply_o3d.geometry.PointCloud()
+# Detach and move to CPU before converting to numpy
 numpy_var = (${varName}).detach().cpu().numpy()
 pcd.points = __viewply_o3d.utility.Vector3dVector(numpy_var[:, :3])
 if numpy_var.shape[1] == 6:
@@ -87,7 +90,7 @@ export default class ViewPLYService {
      * Main entry point to process a user's "View as PLY" request.
      */
     public async viewPLY(document: vscode.TextDocument, range: vscode.Range): Promise<string | undefined> {
-        // Show the output channel so the user sees what's happening
+        // Uncomment next line if you want the panel to pop up automatically
         // this.outputChannel.show(true); 
         this.logInfo('Action triggered.');
 
@@ -124,9 +127,6 @@ export default class ViewPLYService {
                     if (response?.result === 'True') {
                         this.logInfo(`SUCCESS: '${expression}' matched handler: ${handler.name}`);
                         return await this.saveVariableAsPly(expression, handler, session, frameId);
-                    } else {
-                        // Optional: Log verbose debug info
-                        // this.logInfo(`Check failed for ${handler.name}: ${response?.result}`);
                     }
                 } catch (checkError: any) {
                     // This is common if libraries are missing. We log and continue.
@@ -135,7 +135,7 @@ export default class ViewPLYService {
             }
 
             this.logInfo(`Variable '${expression}' did not match any supported point cloud type.`);
-            vscode.window.showWarningMessage(`ViewPLY: Variable '${expression}' is not a valid Point Cloud (NumPy, Torch, or Open3D).`);
+            vscode.window.showWarningMessage(`ViewPLY: Variable '${expression}' is not a recognized Point Cloud (NumPy, Torch, or Open3D).`);
 
         } catch (error: any) {
             this.logError(`CRITICAL ERROR for expression '${expression}'.`, error);
@@ -206,14 +206,24 @@ export default class ViewPLYService {
             const sanitizedName = expression.replace(/[^a-zA-Z0-9_.-]/g, '_').substring(0, 50);
             const savePath = join(sessionDir, `${sanitizedName}_${Date.now()}.ply`).replace(/\\/g, '/');
 
-            // We wrap the save expression in a Python try/except block to capture detailed python-side errors
+            // Wrap the save expression in a Python try/except block
+            // We use a special error string 'ViewPLY_Missing_Open3D' to help the TS side detect missing deps
             const rawCommand = handler.saveExpression(`(${expression})`, savePath);
             const wrappedCommand = `
 try:
 ${rawCommand.replace(/^/gm, '    ')}
     print("ViewPLY Success")
+except ImportError as e:
+    if 'open3d' in str(e):
+        raise ImportError("ViewPLY_Missing_Open3D")
+    else:
+        raise e
+except ModuleNotFoundError as e:
+    if 'open3d' in str(e):
+        raise ImportError("ViewPLY_Missing_Open3D")
+    else:
+        raise e
 except Exception as e:
-    print(f"ViewPLY Error: {e}")
     raise e
 `;
 
@@ -221,9 +231,31 @@ except Exception as e:
 
             this.logInfo(`File saved to: ${savePath}`);
             return savePath;
-        } catch (error) {
-            this.logError(`Failed to save PLY file for '${expression}'.`, error);
-            vscode.window.showErrorMessage(`ViewPLY failed to save file. Check "ViewPLY Debug" output.`);
+
+        } catch (error: any) {
+            const errorMessage = String(error);
+
+            // Handle missing Open3D gracefully with a UI prompt
+            if (errorMessage.includes("ViewPLY_Missing_Open3D") || errorMessage.includes("No module named 'open3d'")) {
+                this.logInfo("Open3D library is missing in the debug environment.");
+                
+                const selection = await vscode.window.showWarningMessage(
+                    `ViewPLY requires 'open3d' to be installed in your Python environment.`,
+                    "How to install",
+                    "Cancel"
+                );
+
+                if (selection === "How to install") {
+                    vscode.env.openExternal(vscode.Uri.parse("https://pypi.org/project/open3d/"));
+                    vscode.window.showInformationMessage("Run `pip install open3d` in your terminal.");
+                }
+            } 
+            else {
+                // Generic error
+                this.logError(`Failed to save PLY file for '${expression}'.`, error);
+                vscode.window.showErrorMessage(`ViewPLY Error: Check "ViewPLY Debug" output for details.`);
+            }
+            
             return undefined;
         }
     }
