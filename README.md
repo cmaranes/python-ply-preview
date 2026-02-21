@@ -103,6 +103,13 @@ This extension handles the *saving* of the point cloud. You need another extensi
 
 ## Release Notes
 
+### 0.0.7
+
+  * Replaced heavy Open3D dependency with pure NumPy and Python file I/O for array saving.
+  * Fixed a critical bug causing timeouts (`Cannot evaluate expression`) on macOS due to slow library loading.
+  * Improved robustness across different Python versions.
+
+
 ### 0.0.6
 
   * Modified README.md to include Visual Studio Marketplace badges.

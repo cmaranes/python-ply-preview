@@ -4,6 +4,13 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+
+### 0.0.7
+
+  * Replaced heavy Open3D dependency with pure NumPy and Python file I/O for array saving.
+  * Fixed a critical bug causing timeouts (`Cannot evaluate expression`) on macOS due to slow library loading.
+  * Improved robustness across different Python versions.
+
 ### 0.0.6
 
   * Removed the requirement to import `open3d` in the user script beforehand.

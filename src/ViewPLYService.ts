@@ -17,6 +17,49 @@ interface PointCloudHandler {
     saveExpression: (varName: string, savePath: string) => string;
 }
 
+// Helper function to generate pure NumPy save code (Avoids Open3D import overhead)
+const getPureNumpySaveExpression = (numpyVarName: string, savePath: string) => `
+import numpy as __vp_np
+try:
+    __vp_data = ${numpyVarName}
+    __vp_count = __vp_data.shape[0]
+    __vp_has_color = __vp_data.shape[1] == 6
+
+    __vp_color_props = "property uchar red\\nproperty uchar green\\nproperty uchar blue" if __vp_has_color else ""
+
+    # Construct PLY Header
+    __vp_header = f"""ply
+format ascii 1.0
+element vertex {__vp_count}
+property float x
+property float y
+property float z
+{__vp_color_props}
+end_header
+"""
+    # Write File
+    with open('${savePath}', 'w') as __vp_f:
+        __vp_f.write(__vp_header)
+        
+        if __vp_has_color:
+            __vp_xyz = __vp_data[:, :3]
+            __vp_rgb = __vp_data[:, 3:]
+            # Normalize colors if they are 0-1 floats
+            if __vp_rgb.max() <= 1.0:
+                __vp_rgb = (__vp_rgb * 255).astype(__vp_np.uint8)
+            else:
+                __vp_rgb = __vp_rgb.astype(__vp_np.uint8)
+            
+            __vp_combined = __vp_np.hstack((__vp_xyz, __vp_rgb))
+            __vp_np.savetxt(__vp_f, __vp_combined, fmt='%.6f %.6f %.6f %d %d %d')
+        else:
+            __vp_np.savetxt(__vp_f, __vp_data, fmt='%.6f %.6f %.6f')
+
+    del __vp_np, __vp_data, __vp_count, __vp_header, __vp_color_props
+except Exception as e:
+    raise e
+`;
+
 const POINT_CLOUD_HANDLERS: PointCloudHandler[] = [
     {
         name: 'Open3D PointCloud',
@@ -32,19 +75,10 @@ del __viewply_o3d`,
     {
         name: 'NumPy Array',
         // Check 2: Verify it is a numpy array with shape (N, 3) or (N, 6)
-        // Uses .startswith('numpy') to be robust against submodules or masked arrays
         typeCheck: (varName) => 
             `hasattr(${varName}, '__class__') and (${varName}.__class__.__module__ == 'numpy' or ${varName}.__class__.__module__.startswith('numpy.')) and ${varName}.__class__.__name__ == 'ndarray' and ${varName}.ndim == 2 and ${varName}.shape[1] in [3, 6]`,
         
-        saveExpression: (varName, savePath) => `
-import open3d as __viewply_o3d
-pcd = __viewply_o3d.geometry.PointCloud()
-# Use slice directly on the variable
-pcd.points = __viewply_o3d.utility.Vector3dVector((${varName})[:, :3])
-if (${varName}).shape[1] == 6:
-    pcd.colors = __viewply_o3d.utility.Vector3dVector((${varName})[:, 3:])
-__viewply_o3d.io.write_point_cloud('${savePath}', pcd)
-del __viewply_o3d`,
+        saveExpression: (varName, savePath) => getPureNumpySaveExpression(varName, savePath),
     },
     {
         name: 'PyTorch Tensor',
@@ -53,15 +87,11 @@ del __viewply_o3d`,
             `hasattr(${varName}, '__class__') and 'torch' in ${varName}.__class__.__module__ and 'Tensor' in ${varName}.__class__.__name__ and ${varName}.ndim == 2 and ${varName}.shape[1] in [3, 6]`,
         
         saveExpression: (varName, savePath) => `
-import open3d as __viewply_o3d
-pcd = __viewply_o3d.geometry.PointCloud()
 # Detach and move to CPU before converting to numpy
-numpy_var = (${varName}).detach().cpu().numpy()
-pcd.points = __viewply_o3d.utility.Vector3dVector(numpy_var[:, :3])
-if numpy_var.shape[1] == 6:
-    pcd.colors = __viewply_o3d.utility.Vector3dVector(numpy_var[:, 3:])
-__viewply_o3d.io.write_point_cloud('${savePath}', pcd)
-del __viewply_o3d`,
+__vp_torch_np = (${varName}).detach().cpu().numpy()
+${getPureNumpySaveExpression('__vp_torch_np', savePath)}
+del __vp_torch_np
+`,
     }
 ];
 
@@ -119,8 +149,6 @@ export default class ViewPLYService {
             for (const handler of POINT_CLOUD_HANDLERS) {
                 const checkExpression = handler.typeCheck(`(${expression})`);
                 
-                // We wrap the check in a try/catch block so that if one check fails (e.g. syntax error),
-                // the loop continues to the next handler instead of crashing the extension.
                 try {
                     const response = await this.evaluateExpression(session, checkExpression, frameId, 'hover');
                     
@@ -129,7 +157,6 @@ export default class ViewPLYService {
                         return await this.saveVariableAsPly(expression, handler, session, frameId);
                     }
                 } catch (checkError: any) {
-                    // This is common if libraries are missing. We log and continue.
                     this.logInfo(`Skipping handler '${handler.name}' due to eval error (likely missing import): ${checkError.message}`);
                 }
             }
