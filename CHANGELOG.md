@@ -5,6 +5,10 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 
+### 0.0.8
+
+  * Resolved Dependabot security alerts by updating vulnerable dev dependencies (mocha, eslint toolchain, and transitive packages).
+
 ### 0.0.7
 
   * Replaced heavy Open3D dependency with pure NumPy and Python file I/O for array saving.
