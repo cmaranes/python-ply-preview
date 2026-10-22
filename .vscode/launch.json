@@ -10,6 +10,8 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
+				// Opens the sample scripts in the Extension Development Host
+				"${workspaceFolder}/test-fixtures/workspace",
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"outFiles": [
