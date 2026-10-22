@@ -69,11 +69,14 @@ jobs:
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
-      - name: Publish to Open VSX
-        if: ${{ env.OVSX_PAT != '' }}
-        run: npx --yes ovsx@0.10 publish python-ply-preview.vsix
-
       - name: Create GitHub Release
         run: gh release create "$GITHUB_REF_NAME" python-ply-preview.vsix --title "$GITHUB_REF_NAME" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # Last and non-blocking: an Open VSX problem must not hold back the Marketplace release.
+      # A failure shows as a warning on the run; publish by hand with `npx ovsx publish <vsix>`.
+      - name: Publish to Open VSX
+        if: ${{ env.OVSX_PAT != '' }}
+        continue-on-error: true
+        run: npx --yes ovsx@0.10 publish python-ply-preview.vsix
