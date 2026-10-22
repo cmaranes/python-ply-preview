@@ -54,6 +54,18 @@ export async function removeStaleSessionDirs(baseDir: string, maxAgeMs: number, 
 
 // --- Service Class ---
 
+/** Raw bytes per debugger request when fetching a file; a multiple of 3 so each chunk is valid base64 on its own. */
+const DEBUGGER_CHUNK_BYTES = 3 * 1024 * 1024;
+
+interface ExportedFile {
+    /** Where the extension asked the debuggee to write */
+    path: string;
+    /** Set when the debuggee couldn't write to `path` and used its temp folder instead */
+    debuggeePath?: string;
+    /** The original point count, if the cloud was subsampled to `maxPoints` */
+    totalPoints?: number;
+}
+
 export default class ViewPLYService {
     private static readonly logPrefix = '[ViewPLY]';
     private static readonly previewFolder = 'ply_preview';
@@ -129,14 +141,77 @@ export default class ViewPLYService {
             return;
         }
 
+        let bytes: Uint8Array;
+        try {
+            bytes = await this.readExport(exported, frame.session, frame.frameId);
+        } catch (error) {
+            this.logError(`Failed to read the exported file for '${expression}'.`, error);
+            vscode.window.showErrorMessage(`ViewPLY: Could not read the exported point cloud. Check "ViewPLY Debug" output for details.`);
+            return;
+        }
+
         if (config.get<string>('viewer') === 'default') {
+            if (exported.debuggeePath) {
+                // Fetched through the debugger; give the other editor a local copy
+                await fs.writeFile(exported.path, bytes);
+            }
             // Whatever editor is registered for .ply files, e.g. the 3D Preview extension
             await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(exported.path), vscode.ViewColumn.Beside);
             return;
         }
 
-        const bytes = new Uint8Array(await fs.readFile(exported.path));
         this.viewer.show(expression, bytes, exported.totalPoints);
+    }
+
+    /**
+     * Reads the exported PLY file from disk, or through the debugger when the debuggee can't share files with
+     * VS Code (Docker, remote machines).
+     */
+    private async readExport(exported: ExportedFile, session: vscode.DebugSession, frameId: number): Promise<Uint8Array> {
+        // Test hook: exercises the debugger transfer without a container
+        const forceDebugger = process.env.VIEWPLY_FORCE_DEBUGGER_TRANSFER === '1';
+        if (!exported.debuggeePath && !forceDebugger) {
+            try {
+                return new Uint8Array(await fs.readFile(exported.path));
+            } catch (error: any) {
+                if (error?.code !== 'ENOENT') {
+                    throw error;
+                }
+            }
+        }
+
+        const debuggeePath = exported.debuggeePath ?? exported.path;
+        this.logInfo(`Reading ${debuggeePath} through the debugger`);
+        const bytes = await this.readThroughDebugger(debuggeePath, session, frameId);
+        if (exported.debuggeePath) {
+            // Written to the debuggee's temp folder, which session cleanup doesn't reach
+            await this.evaluateExpression(session, `__import__('os').remove(${JSON.stringify(debuggeePath)})`, frameId, 'repl')
+                .catch(error => this.logError(`Could not remove ${debuggeePath} in the debuggee.`, error));
+        }
+        return bytes;
+    }
+
+    /**
+     * Reads a file in the debuggee as base64 chunks. Uses the 'clipboard' context: debugpy truncates long strings
+     * in every other context.
+     */
+    private async readThroughDebugger(path: string, session: vscode.DebugSession, frameId: number): Promise<Uint8Array> {
+        const evaluate = async (expression: string) =>
+            String((await this.evaluateExpression(session, expression, frameId, 'clipboard'))?.result);
+
+        const size = Number(await evaluate(`__import__('os').path.getsize(${JSON.stringify(path)})`));
+        const bytes = new Uint8Array(size);
+        for (let offset = 0; offset < size; offset += DEBUGGER_CHUNK_BYTES) {
+            const result = await evaluate(`(lambda f: (f.seek(${offset}), __import__('base64').b64encode(f.read(${DEBUGGER_CHUNK_BYTES})).decode('ascii'), f.close())[1])` +
+                `(open(${JSON.stringify(path)}, 'rb'))`);
+            // The result is the repr of the base64 string: strip the quotes
+            const chunk = Buffer.from(result.slice(1, -1), 'base64');
+            if (chunk.length !== Math.min(DEBUGGER_CHUNK_BYTES, size - offset)) {
+                throw new Error(`Debugger transfer of ${path} returned ${chunk.length} bytes at offset ${offset}; the result was probably truncated.`);
+            }
+            bytes.set(chunk, offset);
+        }
+        return bytes;
     }
 
     /**
@@ -188,16 +263,15 @@ export default class ViewPLYService {
     /**
      * Executes a Python expression in the debugger.
      */
-    private async evaluateExpression(session: vscode.DebugSession, expression: string, frameId: number, context: 'watch' | 'repl' | 'hover') {
+    private async evaluateExpression(session: vscode.DebugSession, expression: string, frameId: number, context: 'watch' | 'repl' | 'hover' | 'clipboard') {
         return session.customRequest("evaluate", { expression, frameId, context });
     }
 
     /**
-     * Runs the export script in the debuggee and returns the written file path, plus the original point count
-     * if the cloud was subsampled to `maxPoints`.
+     * Runs the export script in the debuggee and describes the written file.
      */
     private async saveVariableAsPly(expression: string, session: vscode.DebugSession, frameId: number, maxPoints: number):
-        Promise<{ path: string; totalPoints?: number } | undefined> {
+        Promise<ExportedFile | undefined> {
         try {
             const sessionDir = join(this.baseStorageDir, session.id);
             await fs.mkdir(sessionDir, { recursive: true });
@@ -212,9 +286,14 @@ export default class ViewPLYService {
 
             const response = await this.evaluateExpression(session, command, frameId, 'repl');
 
-            this.logInfo(`File saved to: ${savePath} -> ${response?.result}`);
-            const subsampledFrom = /subsampled from (\d+)/.exec(String(response?.result))?.[1];
-            return { path: savePath, totalPoints: subsampledFrom ? Number(subsampledFrom) : undefined };
+            const result = String(response?.result);
+            this.logInfo(`File saved to: ${savePath} -> ${result}`);
+            const subsampledFrom = /subsampled from (\d+)/.exec(result)?.[1];
+            return {
+                path: savePath,
+                debuggeePath: /\[written to (.+?)\]/.exec(result)?.[1],
+                totalPoints: subsampledFrom ? Number(subsampledFrom) : undefined,
+            };
 
         } catch (error: any) {
             const errorMessage = error instanceof Error ? error.message : String(error);

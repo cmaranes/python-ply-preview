@@ -5,7 +5,15 @@ containing `__vp_obj` (the object to export), `__vp_path` (the output path) and
 optionally `__vp_max_points` (subsample larger clouds to this many points; 0 = no limit).
 It must only depend on NumPy; Open3D/PyTorch objects are converted through their
 NumPy views so those libraries are never imported here.
+
+If the output folder doesn't exist in the debuggee (Docker or a remote machine,
+where the extension's workspace path means nothing), the file is written to the
+temp folder instead and the result says where, so the extension can fetch it
+through the debugger.
 """
+import os
+import tempfile
+
 import numpy as np
 
 
@@ -106,6 +114,13 @@ def export(obj, path, max_points=0):
         header += [f'property uchar {channel}' for channel in ('red', 'green', 'blue')]
     header.append('end_header')
 
+    written_elsewhere = not os.path.isdir(os.path.dirname(path))
+    if written_elsewhere:
+        folder = os.path.join(tempfile.gettempdir(), 'ply_preview')
+        os.makedirs(folder, exist_ok=True)
+        # Forward slashes keep the path readable in the repr the debugger returns
+        path = os.path.join(folder, os.path.basename(path)).replace('\\', '/')
+
     with open(path, 'wb') as f:
         f.write(('\n'.join(header) + '\n').encode('ascii'))
         f.write(data.tobytes())
@@ -113,7 +128,10 @@ def export(obj, path, max_points=0):
     notes = [f'{int((~valid).sum())} non-finite dropped']
     if len(data) < total:
         notes.append(f'subsampled from {total}')
-    return f'{len(data)} points ({", ".join(notes)})'
+    result = f'{len(data)} points ({", ".join(notes)})'
+    if written_elsewhere:
+        result += f' [written to {path}]'
+    return result
 
 
 if '__vp_obj' in globals():
