@@ -6,7 +6,7 @@
 
 🚀 Instantly visualize 3D point clouds from your Python debugger in VS Code\!
 
-This extension enhances your debugging workflow by allowing you to preview point cloud variables as `.ply` files directly from the editor. It supports native **Open3D** point clouds, **NumPy** arrays, and **PyTorch** tensors.
+This extension enhances your debugging workflow by letting you preview point cloud variables in a 3D viewer right next to your code. It supports native **Open3D** point clouds, **NumPy** arrays, and **PyTorch** tensors, and needs no other extension.
 
 **See it on the VS Marketplace:** [Python PLY Preview](https://marketplace.visualstudio.com/items?itemName=cmaranes.python-ply-preview)
 
@@ -20,9 +20,19 @@ This extension enhances your debugging workflow by allowing you to preview point
     * Put the cursor on a variable (or **select an expression** such as `pcd.points` or `batch[0]`) and pick **View PLY** from the lightbulb / quick fix menu (`Ctrl+.`).
     * Right-click a variable in the **Variables** or **Watch** panel and pick **View as Point Cloud (PLY)**.
     * Right-click in the editor, or run **Python PLY Preview: View as Point Cloud (PLY)** from the Command Palette.
-4.  The point cloud will be rendered in a new editor tab.
+4.  The point cloud opens in a viewer tab beside your code. Viewing the same variable again (for example after stepping) updates that tab.
 
 The variable is evaluated in the stack frame selected in the **Call Stack** view, so you can preview variables from any frame or thread.
+
+### The viewer
+
+  * **Rotate** with the left mouse button, **pan** with the right one, **zoom** with the wheel. **Reset view** fits the cloud again.
+  * **Color** by the cloud's own **RGB** colors, by **height** along the up axis, or with a **solid** color.
+  * **Up** axis: **Z** (robotics, LiDAR) or **Y** (graphics). **Axes** shows where the origin is (X red, Y green, Z blue).
+  * The panel at the bottom shows the number of points and the bounding box.
+  * Your toolbar choices are remembered for the next viewer you open.
+
+You can also open any `.ply` file in the viewer: right-click its tab or the file and pick **Reopen Editor With...** > **Point Cloud Viewer**.
 
 -----
 
@@ -87,21 +97,32 @@ The extension only needs **NumPy** in your Python environment (`pip install nump
       * Channels-first `(3|4|6, n)` and batched `(1, n, c)` layouts are handled automatically.
   * Points with `NaN`/`inf` coordinates are dropped.
 
-### 3\. PLY Viewer Extension
+-----
 
-This extension handles the *saving* of the point cloud. You need another extension to *view* the resulting `.ply` file. We recommend:
+## Settings
 
-  * [**3D Preview** by tatsy](https://marketplace.visualstudio.com/items?itemName=tatsy.vscode-3d-preview)
+| Setting | Default | Description |
+|---|---|---|
+| `pythonPlyPreview.maxPoints` | `1000000` | Larger clouds are randomly subsampled to this many points before export (the same points every time). `0` exports every point. |
+| `pythonPlyPreview.viewer` | `builtin` | `default` opens the exported `.ply` file with your default `.ply` editor instead, for example [3D Preview](https://marketplace.visualstudio.com/items?itemName=tatsy.vscode-3d-preview). |
 
 -----
 
-## Known Issues
+## How it works
 
-  * Files are written by the Python process to `.vscode/ply_preview` in your workspace, so the debuggee must be able to write to that path (attaching to a Docker container or remote process with path mappings is not supported yet).
+The Python process writes the point cloud as a binary PLY file to `.vscode/ply_preview` in your workspace; the files are removed when the debug session ends. When the Python process can't write there (attaching to a Docker container or another machine), it writes to its own temp folder and the file is sent through the debugger instead.
 
 -----
 
 ## Release Notes
+
+### 0.2.0
+
+  * **Built-in 3D viewer.** Point clouds open in the extension's own viewer, so the 3D Preview extension is no longer required. It has orbit controls, point size, RGB / height / solid coloring, a Z-up or Y-up toggle, axes and grid, and shows the point count and bounding box. Viewing the same variable again updates its tab.
+  * **Large clouds are subsampled** to 1,000,000 points by default (`pythonPlyPreview.maxPoints`), so the debugger and the viewer stay responsive. The viewer tells you when a cloud was subsampled.
+  * **Docker and remote debugging.** If the Python process can't write to your workspace, the point cloud is sent through the debugger instead.
+  * `.ply` files can be opened in the viewer with **Reopen Editor With...**.
+  * To keep using 3D Preview or another `.ply` editor, set `pythonPlyPreview.viewer` to `default`.
 
 ### 0.1.1
 

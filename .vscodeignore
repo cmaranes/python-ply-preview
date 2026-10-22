@@ -15,3 +15,4 @@ images/*.gif
 images/*.mp4
 test-fixtures/**
 .vscode-test.mjs
+esbuild.mjs
