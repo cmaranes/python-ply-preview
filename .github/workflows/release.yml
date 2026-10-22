@@ -79,4 +79,4 @@ jobs:
       - name: Publish to Open VSX
         if: ${{ env.OVSX_PAT != '' }}
         continue-on-error: true
-        run: npx --yes ovsx@0.10 publish python-ply-preview.vsix
+        run: npx --yes ovsx@1 publish python-ply-preview.vsix
