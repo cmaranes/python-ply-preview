@@ -36,5 +36,19 @@ jobs:
           pip install numpy
           python python/test_ply_export.py
 
+      # Caches the downloaded VS Code and test extensions between runs
+      - uses: actions/cache@v4
+        with:
+          path: .vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('.vscode-test.mjs') }}
+
+      - name: Integration tests (real VS Code + debugpy)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm test
+
+      - name: Integration tests (real VS Code + debugpy)
+        if: runner.os != 'Linux'
+        run: npm test
+
       - name: Package extension
         run: npx --yes @vscode/vsce@3 package --out python-ply-preview.vsix
