@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { join } from 'path';
 import { promises as fs, readFileSync } from 'fs';
+import ViewerPanels from './ViewerPanels';
 
 // --- Python snippets ---
 
@@ -62,7 +63,7 @@ export default class ViewPLYService {
     private readonly exportScript: string;
     private outputChannel: vscode.OutputChannel;
 
-    public constructor(extensionPath: string) {
+    public constructor(extensionPath: string, private readonly viewer: ViewerPanels) {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ".";
         this.baseStorageDir = join(workspaceFolder, ViewPLYService.vscodeFolder, ViewPLYService.previewFolder);
         this.exportScript = readFileSync(join(extensionPath, 'python', 'ply_export.py'), 'utf8');
@@ -72,6 +73,13 @@ export default class ViewPLYService {
 
         this.logInfo(`Service initialized. Storage directory: ${this.baseStorageDir}`);
         vscode.debug.onDidTerminateDebugSession(this.cleanupSessionFiles.bind(this));
+        viewer.onDidReceiveMessage(({ name, message }) => {
+            if (message.type === 'loaded') {
+                this.logInfo(`Viewer loaded '${name}': ${message.points} points${message.hasColors ? ' with colors' : ''}`);
+            } else if (message.type === 'error') {
+                this.logError(`Viewer error for '${name}'.`, message.message);
+            }
+        });
 
         removeStaleSessionDirs(this.baseStorageDir, STALE_SESSION_AGE_MS)
             .then(removed => removed.forEach(dir => this.logInfo(`Removed stale session directory: ${dir}`)))
@@ -103,7 +111,7 @@ export default class ViewPLYService {
     }
 
     /**
-     * Exports `expression` to a PLY file in the active debug frame and opens it.
+     * Exports `expression` to a PLY file in the active debug frame and shows it.
      */
     public async viewPLY(expression: string): Promise<void> {
         this.logInfo(`Exporting '${expression}'`);
@@ -114,10 +122,21 @@ export default class ViewPLYService {
             return;
         }
 
-        const path = await this.saveVariableAsPly(expression, frame.session, frame.frameId);
-        if (path) {
-            await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(path), vscode.ViewColumn.Beside);
+        const config = vscode.workspace.getConfiguration('pythonPlyPreview');
+        const maxPoints = Math.max(0, Math.floor(config.get<number>('maxPoints', 1000000)));
+        const exported = await this.saveVariableAsPly(expression, frame.session, frame.frameId, maxPoints);
+        if (!exported) {
+            return;
         }
+
+        if (config.get<string>('viewer') === 'default') {
+            // Whatever editor is registered for .ply files, e.g. the 3D Preview extension
+            await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(exported.path), vscode.ViewColumn.Beside);
+            return;
+        }
+
+        const bytes = new Uint8Array(await fs.readFile(exported.path));
+        this.viewer.show(expression, bytes, exported.totalPoints);
     }
 
     /**
@@ -174,9 +193,11 @@ export default class ViewPLYService {
     }
 
     /**
-     * Runs the export script in the debuggee and returns the written file path.
+     * Runs the export script in the debuggee and returns the written file path, plus the original point count
+     * if the cloud was subsampled to `maxPoints`.
      */
-    private async saveVariableAsPly(expression: string, session: vscode.DebugSession, frameId: number): Promise<string | undefined> {
+    private async saveVariableAsPly(expression: string, session: vscode.DebugSession, frameId: number, maxPoints: number):
+        Promise<{ path: string; totalPoints?: number } | undefined> {
         try {
             const sessionDir = join(this.baseStorageDir, session.id);
             await fs.mkdir(sessionDir, { recursive: true });
@@ -187,12 +208,13 @@ export default class ViewPLYService {
             // Run the script in a private globals dict so nothing leaks into the user's frame.
             // JSON string literals are valid Python string literals.
             const command = `(lambda __vp_g: (exec(${JSON.stringify(this.exportScript)}, __vp_g), __vp_g['__vp_result'])[1])` +
-                `({'__vp_obj': (${expression}), '__vp_path': ${JSON.stringify(savePath)}})`;
+                `({'__vp_obj': (${expression}), '__vp_path': ${JSON.stringify(savePath)}, '__vp_max_points': ${maxPoints}})`;
 
             const response = await this.evaluateExpression(session, command, frameId, 'repl');
 
             this.logInfo(`File saved to: ${savePath} -> ${response?.result}`);
-            return savePath;
+            const subsampledFrom = /subsampled from (\d+)/.exec(String(response?.result))?.[1];
+            return { path: savePath, totalPoints: subsampledFrom ? Number(subsampledFrom) : undefined };
 
         } catch (error: any) {
             const errorMessage = error instanceof Error ? error.message : String(error);

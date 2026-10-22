@@ -66,6 +66,42 @@
           "when": "inDebugMode"
         }
       ]
+    },
+    "customEditors": [
+      {
+        "viewType": "pythonPlyPreview.plyEditor",
+        "displayName": "Point Cloud Viewer (Python PLY Preview)",
+        "selector": [
+          {
+            "filenamePattern": "*.ply"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "configuration": {
+      "title": "Python PLY Preview",
+      "properties": {
+        "pythonPlyPreview.viewer": {
+          "type": "string",
+          "enum": [
+            "builtin",
+            "default"
+          ],
+          "enumDescriptions": [
+            "Show point clouds in the built-in viewer.",
+            "Open the exported .ply file with the default editor for .ply files, for example the 3D Preview extension."
+          ],
+          "default": "builtin",
+          "description": "Where point clouds previewed during debugging are shown."
+        },
+        "pythonPlyPreview.maxPoints": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1000000,
+          "markdownDescription": "Larger point clouds are randomly subsampled to this many points before export, to keep the debugger and the viewer responsive. The same points are kept every time. `0` exports every point."
+        }
+      }
     }
   },
   "scripts": {
