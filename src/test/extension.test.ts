@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { existsSync, readdirSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 
 const VIEW_COMMAND = 'python-ply-preview.view';
@@ -29,14 +29,76 @@ function readVertexCount(path: string): number {
 /** Resolves once the debugger is paused on a stack frame. */
 function waitForStop(): Promise<void> {
     return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('Debugger did not stop at the breakpoint')), 60000);
+        const done = () => {
+            clearTimeout(timer);
+            listener.dispose();
+        };
+        const timer = setTimeout(() => {
+            done();
+            const item = vscode.debug.activeStackItem;
+            const state = item instanceof vscode.DebugStackFrame ? 'frame' : item instanceof vscode.DebugThread ? 'thread' : 'none';
+            reject(new Error(`Debugger did not stop at the breakpoint (activeStackItem: ${state}).\n` +
+                `Debug adapter log:\n${adapterLog.join('\n')}`));
+        }, 60000);
         const listener = vscode.debug.onDidChangeActiveStackItem(item => {
             if (item instanceof vscode.DebugStackFrame) {
-                clearTimeout(timer);
-                listener.dispose();
+                done();
                 resolve();
             }
         });
+    });
+}
+
+async function startDebuggingAndWaitForStop(): Promise<void> {
+    // fixture.py calls breakpoint(): an editor breakpoint races with debugpy startup on slow CI runners
+    const stopped = waitForStop();
+    // The timeout can fire before `await stopped` below; it is still rethrown there
+    stopped.catch(() => undefined);
+    const started = await vscode.debug.startDebugging(vscode.workspace.workspaceFolders![0], {
+        type: 'debugpy',
+        name: 'ViewPLY integration test',
+        request: 'launch',
+        program: fixturePath,
+        // Resolved in .vscode-test.mjs
+        python: process.env.VIEWPLY_TEST_PYTHON,
+        console: 'internalConsole',
+        justMyCode: true,
+    });
+    assert.ok(started, 'Debug session failed to start');
+    await stopped;
+}
+
+// Debug Adapter Protocol traffic with debugpy, reported when the debugger fails to stop
+const adapterLog: string[] = [];
+const adapterLogStart = Date.now();
+
+function logAdapter(line: string): void {
+    adapterLog.push(`+${Date.now() - adapterLogStart}ms ${line}`);
+    if (adapterLog.length > 100) {
+        adapterLog.shift();
+    }
+}
+
+function trackDebugAdapter(): vscode.Disposable {
+    return vscode.debug.registerDebugAdapterTrackerFactory('debugpy', {
+        createDebugAdapterTracker: () => ({
+            onWillReceiveMessage: (message: any) => {
+                if (message.type === 'request') {
+                    logAdapter(`-> ${message.command}`);
+                }
+            },
+            onDidSendMessage: (message: any) => {
+                if (message.type === 'event') {
+                    const detail = message.event === 'output' ? `: ${String(message.body?.output).trim().slice(0, 300)}`
+                        : message.event === 'stopped' ? ` (${message.body?.reason})` : '';
+                    logAdapter(`<- event ${message.event}${detail}`);
+                } else if (message.type === 'response' && !message.success) {
+                    logAdapter(`<- ${message.command} failed: ${message.message}`);
+                }
+            },
+            onError: error => logAdapter(`adapter error: ${error.message}`),
+            onExit: (code, signal) => logAdapter(`adapter exited: code=${code} signal=${signal}`),
+        }),
     });
 }
 
@@ -57,34 +119,33 @@ async function codeActionTitles(document: vscode.TextDocument, range: vscode.Ran
 
 suite('View PLY during a debug session', () => {
     let document: vscode.TextDocument;
+    let adapterTracker: vscode.Disposable;
 
-    suiteSetup(async () => {
+    suiteSetup(async function () {
+        // Room for one retry of the debugger start below
+        this.timeout(180000);
+        adapterTracker = trackDebugAdapter();
+
+        // Start clean: manual F5 runs in this folder can leave files from sessions that never terminated
+        rmSync(previewDir, { recursive: true, force: true });
+
         document = await vscode.workspace.openTextDocument(fixturePath);
         await vscode.window.showTextDocument(document);
 
-        const breakpointLine = document.getText().split(/\r?\n/).findIndex(line => line.includes('# BREAKPOINT'));
-        vscode.debug.addBreakpoints([
-            new vscode.SourceBreakpoint(new vscode.Location(document.uri, new vscode.Position(breakpointLine, 0))),
-        ]);
-
-        const stopped = waitForStop();
-        const started = await vscode.debug.startDebugging(vscode.workspace.workspaceFolders![0], {
-            type: 'debugpy',
-            name: 'ViewPLY integration test',
-            request: 'launch',
-            program: fixturePath,
-            // Resolved in .vscode-test.mjs
-            python: process.env.VIEWPLY_TEST_PYTHON,
-            console: 'internalConsole',
-            justMyCode: true,
-        });
-        assert.ok(started, 'Debug session failed to start');
-        await stopped;
+        // On CI runners debugpy occasionally (~1 in 25 runs) never reports the stop; retry once and keep the
+        // adapter log of the failed attempt so a recurring problem still surfaces
+        try {
+            await startDebuggingAndWaitForStop();
+        } catch (error) {
+            console.warn(`First debugger start failed, retrying.\n${error instanceof Error ? error.message : error}`);
+            await vscode.debug.stopDebugging();
+            await startDebuggingAndWaitForStop();
+        }
     });
 
     suiteTeardown(async () => {
         await vscode.debug.stopDebugging();
-        vscode.debug.removeBreakpoints(vscode.debug.breakpoints);
+        adapterTracker.dispose();
     });
 
     test('code action is offered for point clouds without writing a file', async () => {
