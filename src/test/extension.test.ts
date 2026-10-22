@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { execSync } from 'child_process';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -11,17 +10,6 @@ const fixturePath = join(workspaceDir, 'fixture.py');
 const previewDir = join(workspaceDir, '.vscode', 'ply_preview');
 
 // --- Helpers ---
-
-function findPython(): string {
-    for (const candidate of ['python', 'python3']) {
-        try {
-            return execSync(`${candidate} -c "import sys, numpy; print(sys.executable)"`).toString().trim();
-        } catch {
-            // try the next candidate
-        }
-    }
-    throw new Error('A Python interpreter with numpy is required to run the integration tests.');
-}
 
 function listPlyFiles(): string[] {
     if (!existsSync(previewDir)) {
@@ -85,7 +73,8 @@ suite('View PLY during a debug session', () => {
             name: 'ViewPLY integration test',
             request: 'launch',
             program: fixturePath,
-            python: findPython(),
+            // Resolved in .vscode-test.mjs
+            python: process.env.VIEWPLY_TEST_PYTHON,
             console: 'internalConsole',
             justMyCode: true,
         });
