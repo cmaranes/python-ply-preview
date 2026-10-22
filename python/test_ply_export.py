@@ -8,11 +8,11 @@ import numpy as np
 SCRIPT = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ply_export.py'), encoding='utf8').read()
 
 
-def run_export(obj):
+def run_export(obj, max_points=0):
     """Runs the script exactly like the extension does (see saveVariableAsPly)."""
     path = os.path.join(tempfile.mkdtemp(), 'out.ply').replace('\\', '/')
     command = (f"(lambda __vp_g: (exec({json.dumps(SCRIPT)}, __vp_g), __vp_g['__vp_result'])[1])"
-               f"({{'__vp_obj': (obj), '__vp_path': {json.dumps(path)}}})")
+               f"({{'__vp_obj': (obj), '__vp_path': {json.dumps(path)}, '__vp_max_points': {max_points}}})")
     result = eval(command, {'obj': obj})
     return read_ply(path), result
 
@@ -69,6 +69,22 @@ def test_non_finite_dropped():
     pts[5, 0] = np.inf
     data, result = run_export(pts)
     assert len(data) == 8 and '2 non-finite' in result
+
+
+def test_subsampling():
+    pts = np.hstack((np.random.rand(1000, 3), np.random.rand(1000, 3)))
+    data, result = run_export(pts, max_points=100)
+    assert len(data) == 100 and 'red' in data.dtype.names
+    assert 'subsampled from 1000' in result
+    # Deterministic, and every kept point comes from the input
+    again, _ = run_export(pts, max_points=100)
+    assert (data == again).all()
+    assert np.isin(data['x'], pts[:, 0].astype(np.float32)).all()
+
+
+def test_subsampling_not_needed():
+    data, result = run_export(np.random.rand(50, 3), max_points=100)
+    assert len(data) == 50 and 'subsampled' not in result
 
 
 def test_bad_shape_raises():
