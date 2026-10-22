@@ -32,6 +32,6 @@ export type ToViewerMessage =
 export type FromViewerMessage =
     | { type: 'ready' }
     /** Sent once the cloud is parsed, before rendering, so it doesn't depend on WebGL being available */
-    | { type: 'loaded'; name: string; points: number; hasColors: boolean }
+    | { type: 'loaded'; name: string; points: number; totalPoints?: number; hasColors: boolean }
     | { type: 'error'; message: string }
     | { type: 'settingsChanged'; settings: ViewerSettings };

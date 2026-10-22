@@ -92,7 +92,7 @@ function loadCloud(name: string, bytes: Uint8Array, totalPoints?: number) {
 
     fileColors = geometry.getAttribute('color') as THREE.BufferAttribute | undefined;
     const count = geometry.getAttribute('position')?.count ?? 0;
-    vscode.postMessage({ type: 'loaded', name, points: count, hasColors: !!fileColors });
+    vscode.postMessage({ type: 'loaded', name, points: count, totalPoints, hasColors: !!fileColors });
 
     if (points) {
         dataGroup.remove(points);
