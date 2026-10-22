@@ -20,9 +20,9 @@ and (o.shape[-1] in (3, 4, 6) or o.shape[-2] in (3, 4, 6))))\
 // --- Service Class ---
 
 export default class ViewPLYService {
-    private static readonly LOG_PREFIX = '[ViewPLY]';
-    private static readonly PREVIEW_FOLDER = 'ply_preview';
-    private static readonly VSCODE_FOLDER = '.vscode';
+    private static readonly logPrefix = '[ViewPLY]';
+    private static readonly previewFolder = 'ply_preview';
+    private static readonly vscodeFolder = '.vscode';
 
     private readonly baseStorageDir: string;
     private readonly exportScript: string;
@@ -30,7 +30,7 @@ export default class ViewPLYService {
 
     public constructor(extensionPath: string) {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ".";
-        this.baseStorageDir = join(workspaceFolder, ViewPLYService.VSCODE_FOLDER, ViewPLYService.PREVIEW_FOLDER);
+        this.baseStorageDir = join(workspaceFolder, ViewPLYService.vscodeFolder, ViewPLYService.previewFolder);
         this.exportScript = readFileSync(join(extensionPath, 'python', 'ply_export.py'), 'utf8');
 
         // Create an Output Channel for better debugging visibility
@@ -92,7 +92,9 @@ export default class ViewPLYService {
         }
 
         const wordRange = document.getWordRangeAtPosition(range.start);
-        if (!wordRange) return;
+        if (!wordRange) {
+            return;
+        }
         const expression = document.getText(wordRange);
 
         const lineText = document.lineAt(range.start.line).text;
@@ -196,7 +198,7 @@ export default class ViewPLYService {
 
     private logInfo(message: string): void {
         const timestamp = new Date().toLocaleTimeString();
-        const msg = `${ViewPLYService.LOG_PREFIX} [${timestamp}] ${message}`;
+        const msg = `${ViewPLYService.logPrefix} [${timestamp}] ${message}`;
         console.log(msg);
         this.outputChannel.appendLine(msg);
     }
@@ -204,7 +206,7 @@ export default class ViewPLYService {
     private logError(message: string, error: any): void {
         const errorMessage = error instanceof Error ? error.message : String(error);
         const timestamp = new Date().toLocaleTimeString();
-        const msg = `${ViewPLYService.LOG_PREFIX} [${timestamp}] ERROR: ${message} | Details: ${errorMessage}`;
+        const msg = `${ViewPLYService.logPrefix} [${timestamp}] ERROR: ${message} | Details: ${errorMessage}`;
         console.error(msg);
         this.outputChannel.appendLine(msg);
     }
