@@ -5,7 +5,7 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 
-### Unreleased
+### 0.1.1
 
   * Preview files left behind when VS Code was closed during a debug session are now removed after a day.
 

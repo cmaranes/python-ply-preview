@@ -103,6 +103,10 @@ This extension handles the *saving* of the point cloud. You need another extensi
 
 ## Release Notes
 
+### 0.1.1
+
+  * Preview files left behind when VS Code was closed during a debug session are now removed after a day.
+
 ### 0.1.0
 
   * The PLY file is now written only when you click **View PLY**, not every time the cursor moves. This makes the debugger much more responsive with large point clouds.
