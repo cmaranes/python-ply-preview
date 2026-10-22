@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import ViewPLYService from './ViewPLYService';
+import ViewerPanels, { PLY_EDITOR_VIEW_TYPE, ViewerMessageEvent } from './ViewerPanels';
 
 const VIEW_COMMAND = 'python-ply-preview.view';
 
@@ -9,11 +10,15 @@ let viewPLYSvc: ViewPLYService;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
-    viewPLYSvc = new ViewPLYService(context.extensionPath);
+    const viewer = new ViewerPanels(context.extensionUri, context.globalState);
+    viewPLYSvc = new ViewPLYService(context.extensionPath, viewer);
 
     context.subscriptions.push(
+        vscode.window.registerCustomEditorProvider(PLY_EDITOR_VIEW_TYPE, viewer, {
+            webviewOptions: { retainContextWhenHidden: true },
+        }),
         vscode.languages.registerCodeActionsProvider('python', new PythonPLYProvider()),
         vscode.commands.registerCommand(VIEW_COMMAND, (arg?: unknown) => {
             const expression = getExpressionFromCommandArg(arg);
@@ -24,6 +29,13 @@ export function activate(context: vscode.ExtensionContext) {
             return viewPLYSvc.viewPLY(expression);
         })
     );
+
+    return { onViewerMessage: viewer.onDidReceiveMessage };
+}
+
+/** Returned from `activate`; lets the integration tests observe the viewer. */
+export interface ExtensionApi {
+    onViewerMessage: vscode.Event<ViewerMessageEvent>;
 }
 
 // this method is called when your extension is deactivated
