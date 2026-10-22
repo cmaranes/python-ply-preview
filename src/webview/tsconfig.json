@@ -1,0 +1,20 @@
+// Type-checks the webview code (runs in the browser, bundled by esbuild.mjs)
+{
+	"compilerOptions": {
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"target": "ES2020",
+		"lib": [
+			"ES2020",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"types": [],
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": [
+		"./**/*.ts"
+	]
+}

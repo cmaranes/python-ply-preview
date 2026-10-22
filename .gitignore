@@ -4,3 +4,5 @@ node_modules
 .vscode-test/
 *.vsix
 test-fixtures/workspace/.vscode/
+# Built by esbuild.mjs
+media/viewer.js

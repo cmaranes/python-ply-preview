@@ -70,8 +70,9 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && tsc -p src/webview && node esbuild.mjs",
     "watch": "tsc -watch -p ./",
+    "watch:webview": "node esbuild.mjs --watch",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test"
@@ -79,12 +80,15 @@
   "devDependencies": {
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
+    "@types/three": "~0.186.0",
     "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.72.0",
     "@typescript-eslint/parser": "^8.72.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
+    "esbuild": "~0.28.2",
     "eslint": "^8.57.1",
+    "three": "~0.186.1",
     "typescript": "^5.9.3"
   },
   "extensionDependencies": [
