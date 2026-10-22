@@ -1,8 +1,8 @@
 {
   "name": "python-ply-preview",
   "displayName": "Python PLY Preview",
-  "description": "Enhance your debugging experience when working with point cloud data. This extension allows you to seamlessly preview and interact with PLY files and NumPy point clouds directly within the VS Code debugger.",
-  "version": "0.1.1",
+  "description": "Preview Open3D point clouds, NumPy arrays and PyTorch tensors in a 3D viewer while debugging Python, right inside VS Code.",
+  "version": "0.2.0",
   "publisher": "cmaranes",
   "engines": {
     "vscode": "^1.90.0"
@@ -127,9 +127,6 @@
     "three": "~0.186.1",
     "typescript": "^5.9.3"
   },
-  "extensionDependencies": [
-    "tatsy.vscode-3d-preview"
-  ],
   "overrides": {
     "serialize-javascript": "^7.0.7",
     "brace-expansion": "^5.0.12",

@@ -5,6 +5,14 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 
+### 0.2.0
+
+  * **Built-in 3D viewer.** Point clouds open in the extension's own viewer, so the 3D Preview extension is no longer required. It has orbit controls, point size, RGB / height / solid coloring, a Z-up or Y-up toggle, axes and grid, and shows the point count and bounding box. Viewing the same variable again updates its tab.
+  * **Large clouds are subsampled** to 1,000,000 points by default (`pythonPlyPreview.maxPoints`), so the debugger and the viewer stay responsive. The viewer tells you when a cloud was subsampled.
+  * **Docker and remote debugging.** If the Python process can't write to your workspace, the point cloud is sent through the debugger instead.
+  * `.ply` files can be opened in the viewer with **Reopen Editor With...**.
+  * To keep using 3D Preview or another `.ply` editor, set `pythonPlyPreview.viewer` to `default`.
+
 ### 0.1.1
 
   * Preview files left behind when VS Code was closed during a debug session are now removed after a day.
