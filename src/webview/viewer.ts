@@ -50,7 +50,9 @@ try {
 } catch (error) {
     // Parsing and the 'loaded' message still work without WebGL
     renderer = undefined;
-    showMessage(`Could not start WebGL, so the point cloud can't be displayed. ${String(error)}`);
+    // Happens on machines without GPU acceleration, e.g. some VMs and remote desktops
+    showMessage('WebGL is not available, so the point cloud can\'t be displayed here. ' +
+        'Set "pythonPlyPreview.viewer" to "default" to open point clouds as .ply files in another editor instead.');
     vscode.postMessage({ type: 'error', message: `WebGL unavailable: ${String(error)}` });
 }
 
