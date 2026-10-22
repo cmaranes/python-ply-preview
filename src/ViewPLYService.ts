@@ -17,6 +17,40 @@ and o.ndim in (2, 3) and (o.ndim == 2 or o.shape[0] == 1) and o.shape[-1] * o.sh
 and (o.shape[-1] in (3, 4, 6) or o.shape[-2] in (3, 4, 6))))\
 (type(o).__module__ or '', type(o).__name__))((${expression}))`;
 
+// --- Stale session cleanup ---
+
+/** Session folders untouched for this long are considered abandoned. */
+const STALE_SESSION_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Removes session folders in `baseDir` that were last modified more than `maxAgeMs` ago.
+ * Folders are normally removed when their debug session terminates, but they are left behind when
+ * VS Code exits while a session is still running. Returns the removed folders.
+ */
+export async function removeStaleSessionDirs(baseDir: string, maxAgeMs: number, now = Date.now()): Promise<string[]> {
+    let entries;
+    try {
+        entries = await fs.readdir(baseDir, { withFileTypes: true });
+    } catch {
+        // Nothing has been previewed in this workspace yet
+        return [];
+    }
+
+    const removed: string[] = [];
+    for (const entry of entries) {
+        if (!entry.isDirectory()) {
+            continue;
+        }
+        const dir = join(baseDir, entry.name);
+        const { mtimeMs } = await fs.stat(dir);
+        if (now - mtimeMs > maxAgeMs) {
+            await fs.rm(dir, { recursive: true, force: true });
+            removed.push(dir);
+        }
+    }
+    return removed;
+}
+
 // --- Service Class ---
 
 export default class ViewPLYService {
@@ -38,6 +72,10 @@ export default class ViewPLYService {
 
         this.logInfo(`Service initialized. Storage directory: ${this.baseStorageDir}`);
         vscode.debug.onDidTerminateDebugSession(this.cleanupSessionFiles.bind(this));
+
+        removeStaleSessionDirs(this.baseStorageDir, STALE_SESSION_AGE_MS)
+            .then(removed => removed.forEach(dir => this.logInfo(`Removed stale session directory: ${dir}`)))
+            .catch(error => this.logError('Error while removing stale session directories.', error));
     }
 
     /**
