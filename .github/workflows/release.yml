@@ -1,0 +1,79 @@
+name: Release
+
+# Publishes when a version tag is pushed, e.g.:
+#   git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check tag matches package.json version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $VERSION"
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run lint
+
+      - name: Test Python exporter
+        run: |
+          pip install numpy
+          python python/test_ply_export.py
+
+      - name: Package extension
+        run: npx --yes @vscode/vsce@3 package --out python-ply-preview.vsix
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: python-ply-preview.vsix
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    # Configure required reviewers on this environment so every release needs manual approval
+    environment: marketplace
+    permissions:
+      contents: write
+    env:
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+
+      - name: Publish to VS Code Marketplace
+        run: npx --yes @vscode/vsce@3 publish --packagePath python-ply-preview.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish to Open VSX
+        if: ${{ env.OVSX_PAT != '' }}
+        run: npx --yes ovsx@0.10 publish python-ply-preview.vsix
+
+      - name: Create GitHub Release
+        run: gh release create "$GITHUB_REF_NAME" python-ply-preview.vsix --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
