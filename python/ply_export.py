@@ -1,7 +1,8 @@
 """Point cloud -> binary PLY exporter.
 
 This file is executed inside the debuggee via exec() with a private globals dict
-containing `__vp_obj` (the object to export) and `__vp_path` (the output path).
+containing `__vp_obj` (the object to export), `__vp_path` (the output path) and
+optionally `__vp_max_points` (subsample larger clouds to this many points; 0 = no limit).
 It must only depend on NumPy; Open3D/PyTorch objects are converted through their
 NumPy views so those libraries are never imported here.
 """
@@ -72,7 +73,7 @@ def _colors_to_uint8(colors):
     return np.clip(np.rint(colors), 0, 255).astype(np.uint8)
 
 
-def export(obj, path):
+def export(obj, path, max_points=0):
     points, colors = _to_numpy(obj)
 
     # Rows with NaN/inf coordinates break most viewers
@@ -80,6 +81,14 @@ def export(obj, path):
     points = points[valid]
     if colors is not None:
         colors = np.asarray(colors)[valid]
+
+    # Fixed seed so viewing the same cloud twice shows the same subset
+    total = len(points)
+    if max_points and total > max_points:
+        keep = np.sort(np.random.default_rng(0).choice(total, max_points, replace=False))
+        points = points[keep]
+        if colors is not None:
+            colors = colors[keep]
 
     fields = [('x', '<f4'), ('y', '<f4'), ('z', '<f4')]
     if colors is not None:
@@ -101,8 +110,11 @@ def export(obj, path):
         f.write(('\n'.join(header) + '\n').encode('ascii'))
         f.write(data.tobytes())
 
-    return f'{len(data)} points ({int((~valid).sum())} non-finite dropped)'
+    notes = [f'{int((~valid).sum())} non-finite dropped']
+    if len(data) < total:
+        notes.append(f'subsampled from {total}')
+    return f'{len(data)} points ({", ".join(notes)})'
 
 
 if '__vp_obj' in globals():
-    __vp_result = export(__vp_obj, __vp_path)
+    __vp_result = export(__vp_obj, __vp_path, globals().get('__vp_max_points', 0))
