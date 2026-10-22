@@ -1,6 +1,7 @@
 """Tests for ply_export.py. Run with: python python/test_ply_export.py"""
 import json
 import os
+import re
 import tempfile
 
 import numpy as np
@@ -8,13 +9,14 @@ import numpy as np
 SCRIPT = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ply_export.py'), encoding='utf8').read()
 
 
-def run_export(obj, max_points=0):
+def run_export(obj, max_points=0, path=None):
     """Runs the script exactly like the extension does (see saveVariableAsPly)."""
-    path = os.path.join(tempfile.mkdtemp(), 'out.ply').replace('\\', '/')
+    path = path or os.path.join(tempfile.mkdtemp(), 'out.ply').replace('\\', '/')
     command = (f"(lambda __vp_g: (exec({json.dumps(SCRIPT)}, __vp_g), __vp_g['__vp_result'])[1])"
                f"({{'__vp_obj': (obj), '__vp_path': {json.dumps(path)}, '__vp_max_points': {max_points}}})")
     result = eval(command, {'obj': obj})
-    return read_ply(path), result
+    written_to = re.search(r'\[written to (.+)\]', result)
+    return read_ply(written_to.group(1) if written_to else path), result
 
 
 def read_ply(path):
@@ -85,6 +87,15 @@ def test_subsampling():
 def test_subsampling_not_needed():
     data, result = run_export(np.random.rand(50, 3), max_points=100)
     assert len(data) == 50 and 'subsampled' not in result
+
+
+def test_missing_folder_falls_back_to_temp():
+    # e.g. the extension's Windows workspace path inside a Linux container
+    data, result = run_export(np.random.rand(20, 3), path='/no/such/folder/cloud_123.ply')
+    assert len(data) == 20
+    written_to = re.search(r'\[written to (.+)\]', result).group(1)
+    assert written_to.endswith('ply_preview/cloud_123.ply') and '\\' not in written_to
+    os.remove(written_to)
 
 
 def test_bad_shape_raises():
