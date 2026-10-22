@@ -16,9 +16,13 @@ This extension enhances your debugging workflow by allowing you to preview point
 
 1.  Set a breakpoint in your Python code.
 2.  Start your program in **Debug Mode** (F5).
-3.  When execution pauses, hover your cursor over a point cloud variable.
-4.  In the hover menu, select **View PLY**.
-5.  The point cloud will be rendered in a new editor tab.
+3.  When execution pauses, open a point cloud in any of these ways:
+    * Put the cursor on a variable (or **select an expression** such as `pcd.points` or `batch[0]`) and pick **View PLY** from the lightbulb / quick fix menu (`Ctrl+.`).
+    * Right-click a variable in the **Variables** or **Watch** panel and pick **View as Point Cloud (PLY)**.
+    * Right-click in the editor, or run **Python PLY Preview: View as Point Cloud (PLY)** from the Command Palette.
+4.  The point cloud will be rendered in a new editor tab.
+
+The variable is evaluated in the stack frame selected in the **Call Stack** view, so you can preview variables from any frame or thread.
 
 -----
 
@@ -71,21 +75,17 @@ print("Breakpoint here: Hover over variables to preview them as PLY.")
 
 ### 1\. Python Libraries
 
-The extension leverages **Open3D** to save the point cloud data. It handles imports automatically, so you don't need to import `open3d` in your script.
-
-However, the libraries must be installed in your Python environment:
-- **open3d**: Mandatory for all operations.
-- **numpy**: Required for NumPy visualization.
-- **torch**: Required for PyTorch visualization.
-
-You can install these packages using pip:
-`pip install open3d numpy torch`
+The extension only needs **NumPy** in your Python environment (`pip install numpy`). Open3D objects and PyTorch tensors are converted through NumPy, so `open3d` and `torch` are never imported by the extension. You only need them if your own code uses them.
 
 ### 2\. Supported Data Formats
 
-  * **Open3D**: Native `o3d.geometry.PointCloud` objects.
-  * **NumPy**: `np.ndarray` with shape `(n, 3)` for XYZ points or `(n, 6)` for XYZ + RGB points.
-  * **PyTorch**: `torch.Tensor` with shape `(n, 3)` for XYZ points or `(n, 6)` for XYZ + RGB points.
+  * **Open3D**: `o3d.geometry.PointCloud` and tensor-API `o3d.t.geometry.PointCloud` objects (with colors if present).
+  * **NumPy** arrays and **PyTorch** tensors (any device) with shape:
+      * `(n, 3)`: XYZ
+      * `(n, 4)`: XYZ + intensity (e.g. LiDAR), shown with a colormap
+      * `(n, 6)`: XYZ + RGB, as floats in `[0, 1]` or values in `[0, 255]`
+      * Channels-first `(3|4|6, n)` and batched `(1, n, c)` layouts are handled automatically.
+  * Points with `NaN`/`inf` coordinates are dropped.
 
 ### 3\. PLY Viewer Extension
 
@@ -97,11 +97,22 @@ This extension handles the *saving* of the point cloud. You need another extensi
 
 ## Known Issues
 
-  * Performance may degrade with a very large number of points (tested up to \~500,000 points).
+  * Files are written by the Python process to `.vscode/ply_preview` in your workspace, so the debuggee must be able to write to that path (attaching to a Docker container or remote process with path mappings is not supported yet).
 
 -----
 
 ## Release Notes
+
+### 0.1.0
+
+  * The PLY file is now written only when you click **View PLY**, not every time the cursor moves. This makes the debugger much more responsive with large point clouds.
+  * Files are now saved as binary PLY, which is much faster and smaller than ASCII.
+  * New entry points: right-click in the **Variables** / **Watch** panels, the editor context menu, and the Command Palette.
+  * You can select an expression such as `pcd.points` or `batch[0]` to preview it.
+  * Uses the stack frame selected in the Call Stack instead of always the top frame of the first thread.
+  * Added support for `(n, 4)` XYZ + intensity, channels-first and `(1, n, c)` batched layouts, and `uint8` colors. Also added support for Open3D tensor-API point clouds.
+  * Dropped the `open3d` requirement: only `numpy` is needed. Non-finite points are filtered out.
+  * Requires VS Code 1.90 or newer.
 
 ### 0.0.7
 

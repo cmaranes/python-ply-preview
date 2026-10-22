@@ -5,6 +5,17 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 
+### 0.1.0
+
+  * The PLY file is now written only when you click **View PLY**, not every time the cursor moves. This makes the debugger much more responsive with large point clouds.
+  * Files are now saved as binary PLY, which is much faster and smaller than ASCII.
+  * New entry points: right-click in the **Variables** / **Watch** panels, the editor context menu, and the Command Palette.
+  * You can select an expression such as `pcd.points` or `batch[0]` to preview it.
+  * Uses the stack frame selected in the Call Stack instead of always the top frame of the first thread.
+  * Added support for `(n, 4)` XYZ + intensity, channels-first and `(1, n, c)` batched layouts, and `uint8` colors. Also added support for Open3D tensor-API point clouds.
+  * Dropped the `open3d` requirement: only `numpy` is needed. Non-finite points are filtered out.
+  * Requires VS Code 1.90 or newer.
+
 ### 0.0.8
 
   * Resolved Dependabot security alerts by updating vulnerable dev dependencies (mocha, eslint toolchain, and transitive packages).
