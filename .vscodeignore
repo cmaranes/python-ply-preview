@@ -13,3 +13,5 @@ python/test_*.py
 out/test/**
 images/*.gif
 images/*.mp4
+test-fixtures/**
+.vscode-test.mjs
