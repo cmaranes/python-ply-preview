@@ -2,10 +2,10 @@
   "name": "python-ply-preview",
   "displayName": "Python PLY Preview",
   "description": "Enhance your debugging experience when working with point cloud data. This extension allows you to seamlessly preview and interact with PLY files and NumPy point clouds directly within the VS Code debugger.",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "publisher": "cmaranes",
   "engines": {
-    "vscode": "^1.81.0"
+    "vscode": "^1.90.0"
   },
   "icon": "images/icon.png",
   "categories": [
@@ -30,6 +30,44 @@
     "onLanguage:python"
   ],
   "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "python-ply-preview.view",
+        "title": "View as Point Cloud (PLY)",
+        "category": "Python PLY Preview"
+      }
+    ],
+    "menus": {
+      "debug/variables/context": [
+        {
+          "command": "python-ply-preview.view",
+          "when": "debugType == debugpy || debugType == python",
+          "group": "navigation"
+        }
+      ],
+      "debug/watch/context": [
+        {
+          "command": "python-ply-preview.view",
+          "when": "debugType == debugpy || debugType == python",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "python-ply-preview.view",
+          "when": "inDebugMode && editorLangId == python",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "python-ply-preview.view",
+          "when": "inDebugMode"
+        }
+      ]
+    }
+  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
@@ -42,7 +80,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
-    "@types/vscode": "^1.81.0",
+    "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^5.59.8",
     "@typescript-eslint/parser": "^5.59.8",
     "@vscode/test-electron": "^2.3.2",
