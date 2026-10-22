@@ -8,7 +8,8 @@ subset = pts_rgb[:10]
 
 
 def main():
-    print(pts, pts_rgb, lidar, T4x4, subset)  # BREAKPOINT
+    breakpoint()  # debugpy stops here; no editor breakpoint needed
+    print(pts, pts_rgb, lidar, T4x4, subset)
 
 
 main()
