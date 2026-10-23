@@ -2,7 +2,7 @@
   "name": "python-ply-preview",
   "displayName": "Python PLY Preview",
   "description": "Preview Open3D point clouds, NumPy arrays and PyTorch tensors in a 3D viewer while debugging Python, right inside VS Code.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "cmaranes",
   "engines": {
     "vscode": "^1.90.0"
@@ -22,6 +22,7 @@
     "visualization",
     "preview"
   ],
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/cmaranes/python-ply-preview"

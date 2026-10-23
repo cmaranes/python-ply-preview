@@ -5,6 +5,10 @@ All notable changes to the "python-ply-preview" extension will be documented in 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 
+### 0.2.1
+
+  * Added the MIT license to the extension metadata, so the Marketplace and Open VSX show it.
+
 ### 0.2.0
 
   * **Built-in 3D viewer.** Point clouds open in the extension's own viewer, so the 3D Preview extension is no longer required. It has orbit controls, point size, RGB / height / solid coloring, a Z-up or Y-up toggle, axes and grid, and shows the point count and bounding box. Viewing the same variable again updates its tab.
